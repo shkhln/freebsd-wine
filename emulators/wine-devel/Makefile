@@ -18,7 +18,7 @@ ONLY_FOR_ARCHS=	amd64 i386
 BUILD_DEPENDS=	${LOCALBASE}/bin/flex:textproc/flex
 
 # Only devel/llvm17 and later come with necessary include files - PR274542
-USES=		bison cpe desktop-file-utils gmake \
+USES=		autoreconf bison cpe desktop-file-utils gmake \
 		llvm:min=17,build,noexport localbase \
 		pkgconfig sdl shebangfix tar:xz
 USE_GCC=	yes
@@ -30,6 +30,7 @@ CONFLICTS_INSTALL=	wine
 
 GNU_CONFIGURE=	yes
 CONFIGURE_ARGS+=--verbose \
+		--enable-archs=i386,x86_64 \
 		--disable-kerberos \
 		--disable-tests \
 		--without-capi \
@@ -157,18 +158,7 @@ pre-build:
 	cd ${WRKSRC} && ${SETENVI} ${WRK_ENV} ${MAKE_CMD} depend
 
 post-install:
-.if ${ARCH} == i386
-	${MV} ${STAGEDIR}${PREFIX}/bin/wineserver	${STAGEDIR}${PREFIX}/bin/wineserver32
-	${MV} ${STAGEDIR}${PREFIX}/bin/wine		${STAGEDIR}${PREFIX}/bin/wine.bin
-	-${ELFCTL} -e +noaslr				${STAGEDIR}${PREFIX}/bin/wine.bin
-	${INSTALL_SCRIPT} ${FILESDIR}/wine.sh		${STAGEDIR}${PREFIX}/bin/wine
-.else
-	${MV} ${STAGEDIR}${PREFIX}/bin/wine		${STAGEDIR}${PREFIX}/bin/wine64.bin
-	-${ELFCTL} -e +noaslr				${STAGEDIR}${PREFIX}/bin/wine64.bin
-	${INSTALL_SCRIPT} ${FILESDIR}/wine.sh		${STAGEDIR}${PREFIX}/bin/wine64
-	${INSTALL_SCRIPT} ${FILESDIR}/wine-wow64.sh	${STAGEDIR}${PREFIX}/bin/wine
-	${INSTALL_SCRIPT} ${FILESDIR}/pkg32.sh		${STAGEDIR}${DATADIR}/pkg32.sh
-.endif
+	${ELFCTL} -e +noaslr ${STAGEDIR}${PREFIX}/bin/wine
 
 	@${MKDIR} ${STAGEDIR}${DOCSDIR}
 .for i in ANNOUNCE.md AUTHORS README.md
