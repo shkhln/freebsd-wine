@@ -28,6 +28,7 @@ CONFLICTS_INSTALL=	wine
 
 GNU_CONFIGURE=	yes
 CONFIGURE_ARGS+=--verbose \
+		--enable-archs=i386,x86_64 \
 		--disable-kerberos \
 		--disable-tests \
 		--without-capi \
@@ -146,6 +147,7 @@ PLIST_SUB+=		WINE32="@comment " WINE64="" WINEARCH="x86_64"
 # FreeBSD yet.
 post-patch:
 	${REINPLACE_CMD} '/Exec/s|wine|wine64|g' ${WRKSRC}/loader/wine.desktop
+	${REINPLACE_CMD} 's|CFLAGS="$$llvm_extra_cflags $$llvm_cflags"|CFLAGS="$$CROSSCFLAGS $$llvm_extra_cflags $$llvm_cflags"|g' ${WRKSRC}/configure
 
 .else
 EXTRA_PATCHES+=	files/extra-patch-tools-winebuild-res32
@@ -156,18 +158,7 @@ pre-build:
 	cd ${WRKSRC} && ${SETENVI} ${WRK_ENV} ${MAKE_CMD} depend
 
 post-install:
-.if ${ARCH} == i386
-	${MV} ${STAGEDIR}${PREFIX}/bin/wineserver	${STAGEDIR}${PREFIX}/bin/wineserver32
-	${MV} ${STAGEDIR}${PREFIX}/bin/wine		${STAGEDIR}${PREFIX}/bin/wine.bin
-	-${ELFCTL} -e +noaslr				${STAGEDIR}${PREFIX}/bin/wine.bin
-	${INSTALL_SCRIPT} ${FILESDIR}/wine.sh		${STAGEDIR}${PREFIX}/bin/wine
-.else
-	${MV} ${STAGEDIR}${PREFIX}/bin/wine64		${STAGEDIR}${PREFIX}/bin/wine64.bin
-	-${ELFCTL} -e +noaslr				${STAGEDIR}${PREFIX}/bin/wine64.bin
-	${INSTALL_SCRIPT} ${FILESDIR}/wine.sh		${STAGEDIR}${PREFIX}/bin/wine64
-	${INSTALL_SCRIPT} ${FILESDIR}/wine-wow64.sh	${STAGEDIR}${PREFIX}/bin/wine
-	${INSTALL_SCRIPT} ${FILESDIR}/pkg32.sh		${STAGEDIR}${DATADIR}/pkg32.sh
-.endif
+	${ELFCTL} -e +noaslr ${STAGEDIR}${PREFIX}/bin/wine
 
 	@${MKDIR} ${STAGEDIR}${DOCSDIR}
 .for i in ANNOUNCE.md AUTHORS README.md
