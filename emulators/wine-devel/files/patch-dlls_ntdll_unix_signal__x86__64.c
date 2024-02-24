@@ -1,5 +1,5 @@
 --- dlls/ntdll/unix/signal_x86_64.c.orig	2024-01-27 01:56:23.000000000 +0300
-+++ dlls/ntdll/unix/signal_x86_64.c	2024-02-22 23:31:46.856586000 +0300
++++ dlls/ntdll/unix/signal_x86_64.c	2024-02-24 10:26:43.416347000 +0300
 @@ -144,6 +144,8 @@ __ASM_GLOBAL_FUNC( alloc_fs_sel,
  
  #elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -139,19 +139,7 @@
  /***********************************************************************
   *           __wine_syscall_dispatcher
   */
-@@ -2632,7 +2682,11 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
-                    __ASM_CFI_REG_IS_AT2(rbp, rcx, 0x98, 0x01)
-                    /* Legends of Runeterra hooks the first system call return instruction, and
-                     * depends on us returning to it. Adjust the return address accordingly. */
-+#ifndef __FreeBSD__
-                    "subq $0xb,0x70(%rcx)\n\t"
-+#else
-+                   "subq $0xe,0x70(%rcx)\n\t" // "jmp 1f" = e9 01 00 00 00
-+#endif
-                    "movl 0xb0(%rcx),%r14d\n\t"     /* frame->syscall_flags */
-                    "testl $3,%r14d\n\t"            /* SYSCALL_HAVE_XSAVE | SYSCALL_HAVE_XSAVEC */
-                    "jz 2f\n\t"
-@@ -2696,6 +2750,23 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
+@@ -2696,6 +2746,23 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                     "leaq -0x98(%rbp),%rcx\n"
                     "2:\n\t"
  #endif
@@ -175,7 +163,7 @@
                     "movq 0x00(%rcx),%rax\n\t"
                     "movq 0x18(%rcx),%r11\n\t"      /* 2nd argument */
                     "movl %eax,%ebx\n\t"
-@@ -2768,7 +2839,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
+@@ -2768,7 +2835,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                     "movq 0x20(%rcx),%rsi\n\t"
                     "movq 0x08(%rcx),%rbx\n\t"
                     "leaq 0x70(%rcx),%rsp\n\t"      /* %rsp > frame means no longer inside syscall */
@@ -184,7 +172,7 @@
                     "testl $12,%r14d\n\t"           /* SYSCALL_HAVE_PTHREAD_TEB | SYSCALL_HAVE_WRFSGSBASE */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2902,6 +2973,20 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+@@ -2902,6 +2969,20 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     "syscall\n\t"
                     "2:\n\t"
  #endif
@@ -205,7 +193,7 @@
                     "movq %r8,%rdi\n\t"             /* args */
                     "callq *(%r10,%rdx,8)\n\t"
                     "movq %rsp,%rcx\n\t"
-@@ -2920,7 +3005,7 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+@@ -2920,7 +3001,7 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
