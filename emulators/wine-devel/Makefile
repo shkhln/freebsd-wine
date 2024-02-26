@@ -17,7 +17,7 @@ ONLY_FOR_ARCHS=	amd64 i386
 
 BUILD_DEPENDS=	${LOCALBASE}/bin/flex:textproc/flex llvm${_LLVM_VERSION}>=0:devel/llvm${_LLVM_VERSION}
 
-USES=		bison cpe desktop-file-utils gmake localbase \
+USES=		autoreconf bison cpe desktop-file-utils gmake localbase \
 		pkgconfig sdl shebangfix tar:xz
 USE_GCC=	yes
 USE_SDL=	sdl2
@@ -147,7 +147,6 @@ PLIST_SUB+=		WINE32="@comment " WINE64="" WINEARCH="x86_64"
 # FreeBSD yet.
 post-patch:
 	${REINPLACE_CMD} '/Exec/s|wine|wine64|g' ${WRKSRC}/loader/wine.desktop
-	${REINPLACE_CMD} 's|CFLAGS="$$llvm_extra_cflags $$llvm_cflags"|CFLAGS="$$CROSSCFLAGS $$llvm_extra_cflags $$llvm_cflags"|g' ${WRKSRC}/configure
 
 .else
 EXTRA_PATCHES+=	files/extra-patch-tools-winebuild-res32
