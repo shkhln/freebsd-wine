@@ -19,14 +19,6 @@
  static inline TEB *get_current_teb(void)
  {
      unsigned long rsp;
-@@ -814,7 +817,6 @@ static inline void set_sigcontext( const CONTEXT *cont
-     EFL_sig(sigcontext) = context->EFlags;
- }
- 
--
- /***********************************************************************
-  *           init_handler
-  */
 @@ -826,6 +828,8 @@ static inline ucontext_t *init_handler( void *sigconte
          struct ntdll_thread_data *thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
          arch_prctl( ARCH_SET_FS, ((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb );
