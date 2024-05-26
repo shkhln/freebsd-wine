@@ -76,20 +76,21 @@
  #else
      fprintf( stderr, "No LDT support on this platform\n" );
      exit(1);
-@@ -2412,7 +2435,48 @@ static void *mac_thread_gsbase(void)
+@@ -2412,7 +2435,44 @@ static void *mac_thread_gsbase(void)
  }
  #endif
  
 +#ifdef __FreeBSD__
-+static __siginfohandler_t *libthr_signal_handlers[_SIG_MAXSIG] = {NULL};
++static __siginfohandler_t *libthr_signal_handlers[_SIG_MAXSIG];
  
 +static void libthr_sighandler_wrapper(int sig, siginfo_t *info, void *_ucp) {
++    struct ntdll_thread_data *thread_data;
 +
 +    /* FreeBSD will restore %fs */
 +    assert(rfs() == GSEL(GUFS32_SEL, SEL_UPL));
 +
 +    /* and lower 32 bits of fsbase, which is not that useful for us */
-+    struct ntdll_thread_data *thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
++    thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
 +    amd64_set_fsbase(((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb);
 +
 +    libthr_signal_handlers[sig - 1](sig, info, _ucp);
@@ -106,12 +107,7 @@
 +        if (__sys_sigaction(sig, NULL, &act) == -1) return -1;
 +        if (act.sa_sigaction != NULL) {
 +
-+            if (libthr_signal_handlers[sig - 1] == NULL) {
-+                libthr_signal_handlers[sig - 1] = act.sa_sigaction;
-+            }
-+
-+            assert(libthr_signal_handlers[sig - 1] == act.sa_sigaction); // ?
-+
++            libthr_signal_handlers[sig - 1] = act.sa_sigaction;
 +            act.sa_sigaction = libthr_sighandler_wrapper;
 +
 +            if (__sys_sigaction(sig, &act, NULL) == -1) return -1;
@@ -125,7 +121,7 @@
  /**********************************************************************
   *		signal_init_process
   */
-@@ -2475,6 +2539,42 @@ void signal_init_process(void)
+@@ -2475,6 +2535,42 @@ void signal_init_process(void)
              break;
          }
      }
@@ -168,7 +164,7 @@
  #endif
  
      sig_act.sa_mask = server_block_set;
-@@ -2496,6 +2596,9 @@ void signal_init_process(void)
+@@ -2496,6 +2592,9 @@ void signal_init_process(void)
      if (sigaction( SIGSEGV, &sig_act, NULL ) == -1) goto error;
      if (sigaction( SIGILL, &sig_act, NULL ) == -1) goto error;
      if (sigaction( SIGBUS, &sig_act, NULL ) == -1) goto error;
@@ -178,7 +174,7 @@
      return;
  
   error:
-@@ -2522,8 +2625,9 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, vo
+@@ -2522,8 +2621,9 @@ void call_init_thunk( LPTHREAD_START_ROUTINE entry, vo
      arch_prctl( ARCH_SET_GS, teb );
      arch_prctl( ARCH_GET_FS, &thread_data->pthread_teb );
      if (fs32_sel) alloc_fs_sel( fs32_sel >> 3, get_wow_teb( teb ));
@@ -190,7 +186,7 @@
  #elif defined(__NetBSD__)
      sysarch( X86_64_SET_GSBASE, &teb );
  #elif defined (__APPLE__)
-@@ -2630,7 +2734,6 @@ __ASM_GLOBAL_FUNC( signal_start_thread,
+@@ -2630,7 +2730,6 @@ __ASM_GLOBAL_FUNC( signal_start_thread,
                     "1:\tmovq %r8,%rsp\n\t"
                     "call " __ASM_NAME("call_init_thunk"))
  
@@ -198,7 +194,7 @@
  /***********************************************************************
   *           __wine_syscall_dispatcher
   */
-@@ -2745,6 +2848,46 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
+@@ -2745,6 +2844,46 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                     "leaq -0x98(%rbp),%rcx\n"
                     "2:\n\t"
  #endif
@@ -245,7 +241,7 @@
                     "movq 0x00(%rcx),%rax\n\t"
                     "movq 0x18(%rcx),%r11\n\t"      /* 2nd argument */
                     "movl %eax,%ebx\n\t"
-@@ -2823,7 +2966,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
+@@ -2823,7 +2962,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                     "movq 0x20(%rcx),%rsi\n\t"
                     "movq 0x08(%rcx),%rbx\n\t"
                     "leaq 0x70(%rcx),%rsp\n\t"      /* %rsp > frame means no longer inside syscall */
@@ -254,7 +250,7 @@
                     "testl $12,%r14d\n\t"           /* SYSCALL_HAVE_PTHREAD_TEB | SYSCALL_HAVE_WRFSGSBASE */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2957,6 +3100,46 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+@@ -2957,6 +3096,46 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     "syscall\n\t"
                     "2:\n\t"
  #endif
@@ -301,7 +297,7 @@
                     "movq %r8,%rdi\n\t"             /* args */
                     "callq *(%r10,%rdx,8)\n\t"
                     "movq %rsp,%rcx\n\t"
-@@ -2975,7 +3158,7 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+@@ -2975,7 +3154,7 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
