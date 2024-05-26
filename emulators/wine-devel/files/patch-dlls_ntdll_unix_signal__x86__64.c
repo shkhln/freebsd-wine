@@ -241,7 +241,7 @@
                     "movq 0x00(%rcx),%rax\n\t"
                     "movq 0x18(%rcx),%r11\n\t"      /* 2nd argument */
                     "movl %eax,%ebx\n\t"
-@@ -2823,7 +2962,7 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
+@@ -2823,12 +2962,17 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                     "movq 0x20(%rcx),%rsi\n\t"
                     "movq 0x08(%rcx),%rbx\n\t"
                     "leaq 0x70(%rcx),%rsp\n\t"      /* %rsp > frame means no longer inside syscall */
@@ -250,7 +250,17 @@
                     "testl $12,%r14d\n\t"           /* SYSCALL_HAVE_PTHREAD_TEB | SYSCALL_HAVE_WRFSGSBASE */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2957,6 +3096,46 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+                    "1:\n\t"
+ #endif
++#ifdef __FreeBSD__
++                   /* reset %ss (after sysret) for AMD */
++                   "movw $0x3b,%r14w\n\t"          /* GSEL(GUDATA_SEL, SEL_UPL) */
++                   "movw %r14w,%ss\n\t"
++#endif
+                    "movq 0x60(%rcx),%r14\n\t"
+                    "testl $0x3,%edx\n\t"           /* CONTEXT_CONTROL | CONTEXT_INTEGER */
+                    "jnz 1f\n\t"
+@@ -2957,6 +3101,46 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     "syscall\n\t"
                     "2:\n\t"
  #endif
@@ -297,7 +307,7 @@
                     "movq %r8,%rdi\n\t"             /* args */
                     "callq *(%r10,%rdx,8)\n\t"
                     "movq %rsp,%rcx\n\t"
-@@ -2975,7 +3154,7 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
+@@ -2975,11 +3159,16 @@ __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
@@ -306,3 +316,12 @@
                     "testl $12,%r14d\n\t"           /* SYSCALL_HAVE_PTHREAD_TEB | SYSCALL_HAVE_WRFSGSBASE */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
+                    "1:\n\t"
++#endif
++#ifdef __FreeBSD__
++                   /* reset %ss (after sysret) for AMD */
++                   "movw $0x3b,%r14w\n\t"          /* GSEL(GUDATA_SEL, SEL_UPL) */
++                   "movw %r14w,%ss\n\t"
+ #endif
+                    "movq 0x60(%rcx),%r14\n\t"
+                    "movq 0x28(%rcx),%rdi\n\t"
