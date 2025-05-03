@@ -20,12 +20,3 @@
        *)
          case $HOST_ARCH in
            i386|arm)
-@@ -914,7 +927,7 @@ do
-             AS_VAR_SET([${wine_arch}_DELAYLOADFLAG],["-Wl,-delayload,"])
-             AS_VAR_APPEND([${wine_arch}_EXTRACFLAGS],[" $llvm_extra_cflags"])
-             AS_VAR_APPEND([${wine_arch}_LDFLAGS],[" $llvm_extra_ldflags"])
--            CFLAGS="$llvm_extra_cflags $llvm_cflags"
-+            CFLAGS="$CROSSCFLAGS $llvm_extra_cflags $llvm_cflags"
-         fi
-         AS_VAR_SET([${wine_arch}_TARGET],[$target])])
-     AS_VAR_POPDEF([wine_cv_crosscc])
