@@ -1,5 +1,5 @@
---- dlls/ntdll/unix/signal_x86_64.c.orig	2025-04-04 23:12:06.000000000 +0300
-+++ dlls/ntdll/unix/signal_x86_64.c	2025-05-04 02:11:12.381616000 +0300
+--- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-04 02:36:40.688134000 +0300
++++ dlls/ntdll/unix/signal_x86_64.c	2025-05-04 21:37:03.756479000 +0300
 @@ -152,6 +152,9 @@
  
  #elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -153,7 +153,7 @@
  #elif defined(__NetBSD__)
      sysarch( X86_64_SET_GSBASE, &teb );
  #elif defined (__APPLE__)
-@@ -2817,6 +2907,46 @@
+@@ -2817,6 +2907,25 @@
                     "syscall\n\t"
                     "leaq -0x98(%rbp),%rcx\n"
                     "2:\n\t"
@@ -169,38 +169,17 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+# ifdef USE_AMD64_SET_FSBASE_FUNC
-+                   "pushq %rax\n\t"
-+                   "pushq %rcx\n\t"
-+                   "pushq %rdx\n\t"
-+                   "pushq %rdi\n\t"
-+                   "pushq %r8\n\t"
-+                   "pushq %r9\n\t"
-+                   "pushq %r10\n\t"
-+                   "pushq %r11\n\t"
-+                   "movq %rsi,%rdi\n\t"
-+                   "callq amd64_set_fsbase\n\t"
-+                   "popq %r11\n\t"
-+                   "popq %r10\n\t"
-+                   "popq %r9\n\t"
-+                   "popq %r8\n\t"
-+                   "popq %rdi\n\t"
-+                   "popq %rdx\n\t"
-+                   "popq %rcx\n\t"
-+                   "popq %rax\n\t"
-+# else
 +                   "pushq %r10\n\t"                /* TODO: what's this? */
 +                   "mov $0xa5,%rax\n\t"            /* sysarch */
 +                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
 +                   "leaq -0x98(%rbp),%rcx\n"
 +                   "popq %r10\n\t"
-+# endif
 +                   "2:\n\t"
  #elif defined __APPLE__
                     "movq 0xb8(%rcx),%rdi\n\t"      /* frame->teb */
                     "movq 0x320(%rdi),%rdi\n\t"     /* amd64_thread_data()->pthread_teb */
-@@ -2861,7 +2991,7 @@
+@@ -2861,7 +2970,7 @@
                     __ASM_CFI(".cfi_remember_state\n\t")
                     __ASM_CFI_CFA_IS_AT2(rcx, 0xa8, 0x01) /* frame->syscall_cfa */
                     "leaq 0x70(%rcx),%rsp\n\t"      /* %rsp > frame means no longer inside syscall */
@@ -209,7 +188,7 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2876,6 +3006,12 @@
+@@ -2876,6 +2985,12 @@
                     "movq %rdx,%rcx\n\t"
                     "movq %r8,%rax\n\t"
  #endif
@@ -222,7 +201,7 @@
                     "movl 0xb4(%rcx),%edx\n\t"      /* frame->restore_flags */
                     "testl $0x48,%edx\n\t"          /* CONTEXT_FLOATING_POINT | CONTEXT_XSTATE */
                     "jnz 2f\n\t"
-@@ -3066,6 +3202,45 @@
+@@ -3066,6 +3181,23 @@
                     "mov $158,%eax\n\t"             /* SYS_arch_prctl */
                     "syscall\n\t"
                     "2:\n\t"
@@ -237,38 +216,16 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+# ifdef USE_AMD64_SET_FSBASE_FUNC
-+                   "pushq %rax\n\t"
-+                   "pushq %rcx\n\t"
-+                   "pushq %rdx\n\t"
-+                   "pushq %rdi\n\t"
-+                   "pushq %r8\n\t"
-+                   "pushq %r9\n\t"
-+                   "pushq %r10\n\t"
-+                   "pushq %r11\n\t"
-+                   "movq %rsi,%rdi\n\t"
-+                   "callq amd64_set_fsbase\n\t"
-+                   "popq %r11\n\t"
-+                   "popq %r10\n\t"
-+                   "popq %r9\n\t"
-+                   "popq %r8\n\t"
-+                   "popq %rdi\n\t"
-+                   "popq %rdx\n\t"
-+                   "popq %rcx\n\t"
-+                   "popq %rax\n\t"
-+# else
 +                   "pushq %r10\n\t"                /* TODO: what's this? */
 +                   "mov $0xa5,%rax\n\t"            /* sysarch */
 +                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
-+                   "leaq -0x98(%rbp),%rcx\n"
 +                   "popq %r10\n\t"
-+# endif
 +                   "2:\n\t"
  #elif defined __APPLE__
                     "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
                     "xorl %esi,%esi\n\t"
-@@ -3090,7 +3265,7 @@
+@@ -3090,7 +3222,7 @@
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
@@ -277,7 +234,7 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -3105,6 +3280,12 @@
+@@ -3105,6 +3237,12 @@
                     "movq %r14,%rcx\n\t"
                     "movq %rdx,%rax\n\t"
  #endif
