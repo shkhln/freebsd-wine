@@ -1,5 +1,5 @@
---- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-04 02:36:40.688134000 +0300
-+++ dlls/ntdll/unix/signal_x86_64.c	2025-05-04 21:37:03.756479000 +0300
+--- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-05 02:17:19.458383000 +0300
++++ dlls/ntdll/unix/signal_x86_64.c	2025-05-10 19:09:03.324871000 +0300
 @@ -152,6 +152,9 @@
  
  #elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -58,7 +58,7 @@
 +    /* FreeBSD will restore %fs */
 +    assert(rfs() == GSEL(GUFS32_SEL, SEL_UPL));
 +
-+    /* and lower 32 bits of fsbase, which is not that useful for us */
++    /* and lower 32 bits of fsbase, so we'll have to overwrite that */
 +    thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
 +    amd64_set_fsbase(((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb);
 +
@@ -123,7 +123,7 @@
 +        if (cpu_stdext_feature & CPUID_STDEXT_FSGSBASE)
 +        {
 +            syscall_flags |= SYSCALL_HAVE_WRFSGSBASE;
-+            fprintf(stderr, "CPU supports wrfsbase\n");
++            //~ fprintf(stderr, "CPU supports wrfsbase\n");
 +        }
 +        else
 +        {
@@ -169,7 +169,7 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+                   "pushq %r10\n\t"                /* TODO: what's this? */
++                   "pushq %r10\n\t"
 +                   "mov $0xa5,%rax\n\t"            /* sysarch */
 +                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
@@ -188,7 +188,7 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2876,6 +2985,12 @@
+@@ -2876,6 +2985,11 @@
                     "movq %rdx,%rcx\n\t"
                     "movq %r8,%rax\n\t"
  #endif
@@ -197,11 +197,10 @@
 +                   "movw $0x3b,%r14w\n\t"          /* GSEL(GUDATA_SEL, SEL_UPL) */
 +                   "movw %r14w,%ss\n\t"
 +#endif
-+
                     "movl 0xb4(%rcx),%edx\n\t"      /* frame->restore_flags */
                     "testl $0x48,%edx\n\t"          /* CONTEXT_FLOATING_POINT | CONTEXT_XSTATE */
                     "jnz 2f\n\t"
-@@ -3066,6 +3181,23 @@
+@@ -3066,6 +3180,23 @@
                     "mov $158,%eax\n\t"             /* SYS_arch_prctl */
                     "syscall\n\t"
                     "2:\n\t"
@@ -216,7 +215,7 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+                   "pushq %r10\n\t"                /* TODO: what's this? */
++                   "pushq %r10\n\t"
 +                   "mov $0xa5,%rax\n\t"            /* sysarch */
 +                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
@@ -225,7 +224,7 @@
  #elif defined __APPLE__
                     "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
                     "xorl %esi,%esi\n\t"
-@@ -3090,7 +3222,7 @@
+@@ -3090,7 +3221,7 @@
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
@@ -234,16 +233,15 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -3105,6 +3237,12 @@
+@@ -3104,6 +3235,11 @@
+                    "syscall\n\t"
                     "movq %r14,%rcx\n\t"
                     "movq %rdx,%rax\n\t"
- #endif
++#endif
 +#ifdef __FreeBSD__
 +                   /* reset %ss (after sysret) for AMD */
 +                   "movw $0x3b,%r14w\n\t"          /* GSEL(GUDATA_SEL, SEL_UPL) */
 +                   "movw %r14w,%ss\n\t"
-+#endif
-+
+ #endif
                     "movq 0x60(%rcx),%r14\n\t"
                     "movq 0x28(%rcx),%rdi\n\t"
-                    "movq 0x20(%rcx),%rsi\n\t"
