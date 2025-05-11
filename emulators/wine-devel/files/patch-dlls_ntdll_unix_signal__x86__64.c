@@ -1,5 +1,5 @@
 --- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-05 02:17:19.458383000 +0300
-+++ dlls/ntdll/unix/signal_x86_64.c	2025-05-10 19:09:03.324871000 +0300
++++ dlls/ntdll/unix/signal_x86_64.c	2025-05-11 23:00:58.788334000 +0300
 @@ -152,6 +152,9 @@
  
  #elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -45,7 +45,7 @@
  #else
      fprintf( stderr, "No LDT support on this platform\n" );
      exit(1);
-@@ -2483,7 +2496,44 @@
+@@ -2483,7 +2496,46 @@
  }
  #endif
  
@@ -56,9 +56,11 @@
 +    struct ntdll_thread_data *thread_data;
 +
 +    /* FreeBSD will restore %fs */
-+    assert(rfs() == GSEL(GUFS32_SEL, SEL_UPL));
++    if (rfs() != GSEL(GUFS32_SEL, SEL_UPL)) {
++        __asm__ volatile ("ud2");
++    }
 +
-+    /* and lower 32 bits of fsbase, so we'll have to overwrite that */
++    /* occasionally it loses higher 32 bits of fsbase, so we'll have to overwrite it */
 +    thread_data = (struct ntdll_thread_data *)&get_current_teb()->GdiTebBatch;
 +    amd64_set_fsbase(((struct amd64_thread_data *)thread_data->cpu_data)->pthread_teb);
 +
@@ -90,7 +92,7 @@
  /**********************************************************************
   *		signal_init_process
   */
-@@ -2546,6 +2596,42 @@
+@@ -2546,6 +2598,42 @@
              break;
          }
      }
@@ -133,7 +135,7 @@
  #endif
  
      sig_act.sa_mask = server_block_set;
-@@ -2571,6 +2657,9 @@
+@@ -2571,6 +2659,9 @@
      sig_act.sa_sigaction = sigsys_handler;
      if (sigaction( SIGSYS, &sig_act, NULL ) == -1) goto error;
  #endif
@@ -143,7 +145,7 @@
      return;
  
   error:
-@@ -2600,7 +2689,8 @@
+@@ -2600,7 +2691,8 @@
      arch_prctl( ARCH_GET_FS, &thread_data->pthread_teb );
      if (fs32_sel) alloc_fs_sel( fs32_sel >> 3, get_wow_teb( teb ));
  #elif defined (__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -153,7 +155,7 @@
  #elif defined(__NetBSD__)
      sysarch( X86_64_SET_GSBASE, &teb );
  #elif defined (__APPLE__)
-@@ -2817,6 +2907,25 @@
+@@ -2817,6 +2909,25 @@
                     "syscall\n\t"
                     "leaq -0x98(%rbp),%rcx\n"
                     "2:\n\t"
@@ -179,7 +181,7 @@
  #elif defined __APPLE__
                     "movq 0xb8(%rcx),%rdi\n\t"      /* frame->teb */
                     "movq 0x320(%rdi),%rdi\n\t"     /* amd64_thread_data()->pthread_teb */
-@@ -2861,7 +2970,7 @@
+@@ -2861,7 +2972,7 @@
                     __ASM_CFI(".cfi_remember_state\n\t")
                     __ASM_CFI_CFA_IS_AT2(rcx, 0xa8, 0x01) /* frame->syscall_cfa */
                     "leaq 0x70(%rcx),%rsp\n\t"      /* %rsp > frame means no longer inside syscall */
@@ -188,7 +190,7 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -2876,6 +2985,11 @@
+@@ -2876,6 +2987,11 @@
                     "movq %rdx,%rcx\n\t"
                     "movq %r8,%rax\n\t"
  #endif
@@ -200,7 +202,7 @@
                     "movl 0xb4(%rcx),%edx\n\t"      /* frame->restore_flags */
                     "testl $0x48,%edx\n\t"          /* CONTEXT_FLOATING_POINT | CONTEXT_XSTATE */
                     "jnz 2f\n\t"
-@@ -3066,6 +3180,23 @@
+@@ -3066,6 +3182,23 @@
                     "mov $158,%eax\n\t"             /* SYS_arch_prctl */
                     "syscall\n\t"
                     "2:\n\t"
@@ -224,7 +226,7 @@
  #elif defined __APPLE__
                     "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
                     "xorl %esi,%esi\n\t"
-@@ -3090,7 +3221,7 @@
+@@ -3090,7 +3223,7 @@
                     /* switch to user stack */
                     "movq 0x88(%rcx),%rsp\n\t"
                     __ASM_CFI(".cfi_restore_state\n\t")
@@ -233,7 +235,7 @@
                     "testl $4,%r14d\n\t"            /* SYSCALL_HAVE_PTHREAD_TEB */
                     "jz 1f\n\t"
                     "movw %gs:0x338,%fs\n"          /* amd64_thread_data()->fs */
-@@ -3104,6 +3235,11 @@
+@@ -3104,6 +3237,11 @@
                     "syscall\n\t"
                     "movq %r14,%rcx\n\t"
                     "movq %rdx,%rax\n\t"
