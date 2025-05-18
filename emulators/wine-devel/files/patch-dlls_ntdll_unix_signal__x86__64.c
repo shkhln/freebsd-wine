@@ -1,5 +1,5 @@
---- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-11 23:22:08.467778000 +0300
-+++ dlls/ntdll/unix/signal_x86_64.c	2025-05-16 21:58:47.330330000 +0300
+--- dlls/ntdll/unix/signal_x86_64.c.orig	2025-05-18 07:36:55.892617000 +0300
++++ dlls/ntdll/unix/signal_x86_64.c	2025-05-18 07:57:02.864322000 +0300
 @@ -152,6 +152,9 @@
  
  #elif defined(__FreeBSD__) || defined (__FreeBSD_kernel__)
@@ -159,11 +159,11 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+                   "pushq %r10\n\t"
-+                   "mov $0xa5,%rax\n\t"            /* sysarch */
-+                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
++                   "movq %r10,%rbx\n\t"
++                   "movq $0xa5,%rax\n\t"           /* sysarch */
++                   "movq $0x81,%rdi\n\t"           /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
-+                   "popq %r10\n\t"
++                   "movq %rbx,%r10\n\t"
 +                   "leaq -0x98(%rbp),%rcx\n"
 +                   "2:\n\t"
  #elif defined __APPLE__
@@ -205,11 +205,11 @@
 +                   "wrfsbase %rsi\n\t"
 +                   "jmp 2f\n"
 +                   "1:\n\t"
-+                   "pushq %r10\n\t"
-+                   "mov $0xa5,%rax\n\t"            /* sysarch */
-+                   "mov $0x81,%rdi\n\t"            /* AMD64_SET_FSBASE */
++                   "movq %r10,%r12\n\t"
++                   "movq $0xa5,%rax\n\t"           /* sysarch */
++                   "movq $0x81,%rdi\n\t"           /* AMD64_SET_FSBASE */
 +                   "syscall\n\t"
-+                   "popq %r10\n\t"
++                   "movq %r12,%r10\n\t"
 +                   "2:\n\t"
  #elif defined __APPLE__
                     "movq %gs:0x320,%rdi\n\t"       /* amd64_thread_data()->pthread_teb */
