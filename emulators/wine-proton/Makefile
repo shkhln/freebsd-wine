@@ -129,7 +129,7 @@ PLIST_SUB+=	WINE32="" WINE64="@comment " WINEARCH="i386"
 .endif
 
 pre-configure:
-	cd ${WRKSRC} && ${PYTHON_CMD} dlls/winevulkan/make_vulkan --xml vk.xml
+	cd ${WRKSRC} && ${SETENV} ${MAKE_ENV} ${PYTHON_CMD} dlls/winevulkan/make_vulkan --xml vk.xml --video-xml video.xml
 	cd ${WRKSRC} && ${PERL5} tools/make_specfiles
 
 pre-build:
