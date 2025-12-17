@@ -1,6 +1,5 @@
 PORTNAME=	wine-proton
-DISTVERSION=	10.0-1
-PORTREVISION=	0
+DISTVERSION=	10.0-3
 CATEGORIES=	emulators
 
 MAINTAINER=	iwtcex@gmail.com
@@ -31,7 +30,7 @@ LIB_DEPENDS+=	libwayland-client.so:graphics/wayland \
 		libxkbcommon.so:x11/libxkbcommon \
 		libxkbregistry.so:x11/libxkbcommon
 
-RUN_DEPENDS+=	ffmpeg4>=0:multimedia/ffmpeg4 # we are avoiding LIB_DEPENDS because find-lib.sh brings ffmpeg 6, which is ridiculous
+RUN_DEPENDS+=	ffmpeg4>=0:multimedia/ffmpeg4 # we are avoiding LIB_DEPENDS because find-lib.sh brings ffmpeg 6
 
 USES=		autoreconf bison desktop-file-utils gl gmake gnome gstreamer llvm:min=17,build,noexport localbase perl5 pkgconfig python:build sdl shebangfix tar:xz xorg
 USE_GCC=	yes
@@ -39,7 +38,7 @@ USE_GCC=	yes
 USE_GITHUB=	yes
 GH_ACCOUNT=	ValveSoftware
 GH_PROJECT=	wine
-GH_TAGNAME=	3e3b24184a29e8e35cd618100fefabccfc01f420
+GH_TAGNAME=	proton-wine-10.0-3
 
 USE_GL=		gl
 USE_GNOME=	glib20
@@ -48,7 +47,7 @@ USE_PERL5=	build
 USE_SDL=	sdl2
 USE_XORG=	x11 xext xcomposite xcursor xi xinerama xrandr xrender
 
-NO_SHLIB_REQUIRES_GLOB= * # some of us never wanted that functionality in the first place
+NO_SHLIB_REQUIRES_GLOB= * # we don't need this functionality
 
 SHEBANG_FILES=	tools/make_requests tools/winemaker/winemaker \
 		tools/winedump/function_grep.pl

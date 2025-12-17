@@ -1,4 +1,4 @@
---- dlls/winevulkan/vulkan.c.orig
+--- dlls/winevulkan/vulkan.c.orig	2025-11-06 09:54:15 UTC
 +++ dlls/winevulkan/vulkan.c
 @@ -29,6 +29,7 @@
  #include <stdio.h>
@@ -8,7 +8,7 @@
  #ifdef HAVE_SYS_SYSCALL_H
  # include <sys/syscall.h>
  #endif
-@@ -3547,11 +3547,7 @@
+@@ -3598,11 +3599,7 @@ void *signaller_worker(void *arg)
  
  void *signaller_worker(void *arg)
  {

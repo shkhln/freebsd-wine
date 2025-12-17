@@ -1,6 +1,6 @@
---- dlls/dsound/primary.c.orig	2025-07-23 03:45:33.314139000 +0300
-+++ dlls/dsound/primary.c	2025-07-23 04:22:39.177103000 +0300
-@@ -194,10 +194,10 @@
+--- dlls/dsound/primary.c.orig	2025-11-06 09:54:15 UTC
++++ dlls/dsound/primary.c
+@@ -194,10 +194,10 @@ static HRESULT DSOUND_WaveFormat(DirectSoundDevice *de
          if (FAILED(hr))
              return hr;
  
